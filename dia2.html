@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head><script src="https://myhub.ia.br/canvas-vendor/tailwind.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quiz — Dia 2: Fazer Perguntas</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    background: linear-gradient(135deg, #0a1a4a 0%, #0d2366 50%, #0a1a4a 100%);
+    min-height: 100vh;
+    color: #fff;
+  }
+  .accent { color: #fbbf24; }
+  .accent-bg { background-color: #fbbf24; }
+  .card {
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 1rem;
+  }
+  .option-btn {
+    width: 100%;
+    text-align: left;
+    padding: 1rem;
+    border-radius: 0.75rem;
+    border: 1px solid #1e3a8a;
+    background: rgba(30,58,138,0.4);
+    color: #fff;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .option-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    border-color: #fbbf24;
+  }
+  .option-btn.correct { background: #16a34a !important; border-color: #16a34a !important; }
+  .option-btn.wrong { background: #dc2626 !important; border-color: #dc2626 !important; }
+  .option-btn.selected { border-color: #fbbf24 !important; }
+  .fill-input {
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid #fbbf24;
+    color: #fbbf24;
+    font-weight: bold;
+    text-align: center;
+    outline: none;
+  }
+  .fill-input:focus { border-bottom-color: #fff; }
+  .fill-input.correct-input { border-bottom-color: #16a34a; color: #16a34a; }
+  .fill-input.wrong-input { border-bottom-color: #dc2626; color: #dc2626; }
+  .progress-bar { transition: width 0.4s ease; }
+  .hidden { display: none; }
+  .fade-in { animation: fadeIn 0.3s ease-in; }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+</style>
+</head>
+<body>
+<div id="app" style="max-width: 48rem; margin: 0 auto; padding: 2rem 1rem;">
+
+  <!-- Tela inicial -->
+  <div id="start-screen" class="text-center fade-in" style="text-align:center;">
+    <div style="display:inline-block; padding:0.5rem 1rem; border-radius:9999px; border:1px solid #60a5fa; font-size:0.875rem; margin-bottom:1.5rem;">
+      <span class="accent" style="font-weight:bold;">DIA 2</span> — FAZER PERGUNTAS
+    </div>
+    <h1 style="font-size:2.5rem; font-weight:bold; margin-bottom:1rem;">Quiz do Módulo 2</h1>
+    <p style="font-size:1.25rem; color:#bfdbfe; margin-bottom:2rem;">Teste o que você aprendeu sobre fazer perguntas em inglês.</p>
+
+    <div class="card" style="padding:1.5rem; margin-bottom:2rem; text-align:left;">
+      <h2 class="accent" style="font-weight:bold; font-size:1.125rem; margin-bottom:0.75rem;">Como funciona:</h2>
+      <ul style="list-style:none; color:#bfdbfe;">
+        <li style="margin-bottom:0.5rem;">📝 <strong>10 perguntas</strong> de tipos variados</li>
+        <li style="margin-bottom:0.5rem;">✅ <strong>Feedback imediato</strong> após cada resposta</li>
+        <li style="margin-bottom:0.5rem;">🏆 <strong>Pontuação final</strong> com revisão das respostas</li>
+        <li>⏱️ Sem limite de tempo — vá no seu ritmo</li>
+      </ul>
+    </div>
+
+    <button onclick="startQuiz()" class="accent-bg" style="color:#1e3a8a; font-weight:bold; font-size:1.125rem; padding:1rem 2rem; border-radius:0.75rem; border:none; cursor:pointer;">
+      Começar Quiz →
+    </button>
+  </div>
+
+  <!-- Tela de pergunta -->
+  <div id="question-screen" class="hidden fade-in">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+      <span style="color:#93c5fd; font-size:0.875rem;" id="question-counter">Pergunta 1 de 10</span>
+      <span style="color:#93c5fd; font-size:0.875rem;" id="score-display">Pontos: 0</span>
+    </div>
+    <div style="width:100%; background:#1e3a8a; border-radius:9999px; height:0.5rem; margin-bottom:2rem;">
+      <div id="progress-bar" class="accent-bg progress-bar" style="height:0.5rem; border-radius:9999px; width:10%;"></div>
+    </div>
+
+    <div id="question-container" class="card" style="padding:1.5rem 2rem;">
+      <!-- Conteúdo injetado via JS -->
+    </div>
+
+    <div id="feedback-area" class="hidden card" style="margin-top:1.5rem; padding:1.25rem;">
+      <!-- Feedback injetado via JS -->
+    </div>
+
+    <div style="display:flex; justify-content:space-between; margin-top:1.5rem;">
+      <button id="prev-btn" onclick="prevQuestion()" class="hidden" style="color:#93c5fd; background:none; border:none; padding:0.5rem 1rem; cursor:pointer;">
+        ← Anterior
+      </button>
+      <button id="next-btn" onclick="nextQuestion()" class="hidden accent-bg" style="color:#1e3a8a; font-weight:bold; padding:0.75rem 1.5rem; border-radius:0.75rem; border:none; cursor:pointer; margin-left:auto;">
+        Próxima →
+      </button>
+    </div>
+  </div>
+
+  <!-- Tela de resultado -->
+  <div id="result-screen" class="hidden fade-in" style="text-align:center;">
+    <div style="display:inline-block; padding:0.5rem 1rem; border-radius:9999px; border:1px solid #60a5fa; font-size:0.875rem; margin-bottom:1.5rem;">
+      <span class="accent" style="font-weight:bold;">DIA 2</span> — FAZER PERGUNTAS
+    </div>
+    <h1 style="font-size:2.5rem; font-weight:bold; margin-bottom:0.5rem;">Quiz Concluído!</h1>
+    <p style="color:#bfdbfe; margin-bottom:1.5rem;">Veja como você se saiu:</p>
+
+    <div class="card" style="padding:2rem; margin-bottom:1.5rem; display:inline-block;">
+      <div style="font-size:3.75rem; font-weight:bold;" class="accent" id="final-score">0/10</div>
+      <div style="color:#93c5fd;" id="final-percent">0%</div>
+    </div>
+
+    <p style="font-size:1.25rem; margin-bottom:2rem;" id="final-message"></p>
+
+    <div class="card" style="padding:1.5rem; margin-bottom:2rem; text-align:left;">
+      <h2 class="accent" style="font-weight:bold; font-size:1.125rem; margin-bottom:1rem;">Revisão das respostas:</h2>
+      <div id="review-container" style="display:flex; flex-direction:column; gap:1rem;">
+        <!-- Injetado via JS -->
+      </div>
+    </div>
+
+    <button onclick="restartQuiz()" class="accent-bg" style="color:#1e3a8a; font-weight:bold; padding:1rem 2rem; border-radius:0.75rem; border:none; cursor:pointer;">
+      Refazer Quiz ↻
+    </button>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// BANCO DE PERGUNTAS — Dia 2: Fazer Perguntas
+// ============================================================
+const questions = [
+  {
+    type: "multiple",
+    question: "O que significa 'How about you?' em português?",
+    options: [
+      "O que você faz?",
+      "E você?",
+      "Onde você mora?",
+      "Quem é você?"
+    ],
+    correct: 1,
+    explanation: "'How about you?' (ou 'What about you?') é a forma natural de devolver a pergunta — 'E você?'."
+  },
+  {
+    type: "fill",
+    question: "Complete a resposta para devolver a pergunta:",
+    prefix: "I'm good, thanks.",
+    answer: "how",
+    acceptable: ["how"],
+    explanation: "A resposta completa é: 'I'm good, thanks. How about you?' — devolvendo a pergunta de forma natural."
+  },
+  {
+    type: "multiple",
+    question: "'What do you do?' pergunta sobre...",
+    options: [
+      "o que você está fazendo agora",
+      "a sua profissão ou rotina",
+      "o seu endereço",
+      "os seus planos de viagem"
+    ],
+    correct: 1,
+    explanation: "'What do you do?' pergunta sobre profissão ou rotina — não sobre o que a pessoa está fazendo no momento."
+  },
+  {
+    type: "multiple",
+    question: "Como se traduz 'Where are you from?'?",
+    options: [
+      "Onde você está?",
+      "Para onde você vai?",
+      "De onde você é?",
+      "Onde você mora?"
+    ],
+    correct: 2,
+    explanation: "'Where are you from?' = 'De onde você é?' — pergunta sobre a origem da pessoa."
+  },
+  {
+    type: "truefalse",
+    question: "'What are you doing this weekend?' é uma pergunta natural para falar sobre planos futuros.",
+    correct: true,
+    explanation: "Correto! O presente contínuo é usado para planos futuros — perfeito para perguntar sobre o fim de semana."
+  },
+  {
+    type: "multiple",
+    question: "Qual é uma variação natural de 'Where are you from?'?",
+    options: [
+      "Where do you live?",
+      "Where are you going?",
+      "Where is it?",
+      "Do you work or study?"
+    ],
+    correct: 0,
+    explanation: "'Where do you live?' (Onde você mora?) e 'Where were you born?' (Onde você nasceu?) são variações naturais."
+  },
+  {
+    type: "multiple",
+    question: "O que significa 'Do you work or study?'?",
+    options: [
+      "Você trabalha e estuda?",
+      "Você quer trabalhar?",
+      "Você trabalha ou estuda?",
+      "Você está estudando agora?"
+    ],
+    correct: 2,
+    explanation: "'Do you work or study?' = 'Você trabalha ou estuda?' — o 'or' indica alternativa, não as duas coisas."
+  },
+  {
+    type: "fill",
+    question: "Complete a frase:",
+    prefix: "What do you like to",
+    suffix: "in your free time?",
+    answer: "do",
+    acceptable: ["do"],
+    explanation: "'What do you like to do in your free time?' = 'O que você gosta de fazer no tempo livre?'"
+  },
+  {
+    type: "truefalse",
+    question: "'Is this your first time here?' significa 'Você já esteve aqui antes?'.",
+    correct: false,
+    explanation: "Falso! 'Is this your first time here?' = 'É a sua primeira vez aqui?'. 'Você já esteve aqui antes?' seria 'Have you been here before?'."
+  },
+  {
+    type: "multiple",
+    question: "Qual das opções NÃO serve para perguntar sobre a profissão de alguém?",
+    options: [
+      "What do you do?",
+      "What do you do for work?",
+      "Where are you from?",
+      "What's your job?"
+    ],
+    correct: 2,
+    explanation: "'Where are you from?' pergunta sobre origem, não profissão. As outras opções são adequadas para saber o trabalho."
+  }
+];
+
+// ============================================================
+// MOTOR DO QUIZ
+// ============================================================
+let currentQuestion = 0;
+let score = 0;
+let answers = new Array(questions.length).fill(null);
+let answered = false;
+
+function startQuiz() {
+  document.getElementById('start-screen').classList.add('hidden');
+  document.getElementById('question-screen').classList.remove('hidden');
+  document.getElementById('result-screen').classList.add('hidden');
+  currentQuestion = 0;
+  score = 0;
+  answers = new Array(questions.length).fill(null);
+  renderQuestion();
+}
+
+function renderQuestion() {
+  answered = false;
+  const q = questions[currentQuestion];
+  const container = document.getElementById('question-container');
+  const feedback = document.getElementById('feedback-area');
+  feedback.classList.add('hidden');
+
+  document.getElementById('question-counter').textContent = `Pergunta ${currentQuestion + 1} de ${questions.length}`;
+  document.getElementById('score-display').textContent = `Pontos: ${score}`;
+  document.getElementById('progress-bar').style.width = `${((currentQuestion + 1) / questions.length) * 100}%`;
+
+  document.getElementById('prev-btn').classList.toggle('hidden', currentQuestion === 0);
+  document.getElementById('next-btn').classList.add('hidden');
+
+  if (q.type === 'multiple') {
+    container.innerHTML = `
+      <div style="margin-bottom:0.5rem;"><span class="accent" style="font-size:0.875rem; font-weight:bold; text-transform:uppercase; letter-spacing:0.05em;">Múltipla escolha</span></div>
+      <h3 style="font-size:1.5rem; font-weight:bold; margin-bottom:1.5rem;">${q.question}</h3>
+      <div style="display:flex; flex-direction:column; gap:0.75rem;" id="options-container">
+        ${q.options.map((opt, i) => `
+          <button class="option-btn" onclick="selectOption(${i})" data-index="${i}">
+            <span class="accent" style="font-weight:bold; margin-right:0.75rem;">${String.fromCharCode(65 + i)}.</span> ${opt}
+          </button>
+        `).join('')}
+      </div>
+    `;
+  } else if (q.type === 'truefalse') {
+    container.innerHTML = `
+      <div style="margin-bottom:0.5rem;"><span class="accent" style="font-size:0.875rem; font-weight:bold; text-transform:uppercase; letter-spacing:0.05em;">Verdadeiro ou Falso</span></div>
+      <h3 style="font-size:1.5rem; font-weight:bold; margin-bottom:1.5rem;">${q.question}</h3>
+      <div class="flex gap-4 justify-center" id="tf-container" style="display:flex; gap:1rem; justify-content:center;">
+        <button class="option-btn" style="flex:1; text-align:center; padding:1.5rem; font-size:1.125rem; font-weight:bold;" onclick="selectTF(true)">✓ Verdadeiro</button>
+        <button class="option-btn" style="flex:1; text-align:center; padding:1.5rem; font-size:1.125rem; font-weight:bold;" onclick="selectTF(false)">✗ Falso</button>
+      </div>
+    `;
+  } else if (q.type === 'fill') {
+    container.innerHTML = `
+      <div style="margin-bottom:0.5rem;"><span class="accent" style="font-size:0.875rem; font-weight:bold; text-transform:uppercase; letter-spacing:0.05em;">Complete a frase</span></div>
+      <h3 style="font-size:1.5rem; font-weight:bold; margin-bottom:1.5rem;">${q.question}</h3>
+      <div style="font-size:1.875rem; text-align:center; padding:1.5rem 0;">
+        <span>${q.prefix || ''}</span>
+        <input type="text" id="fill-input" class="fill-input" style="margin:0 0.5rem; width:10rem; font-size:1.875rem;" placeholder="___" autocomplete="off">
+        <span>${q.suffix || ''}</span>
+      </div>
+      <div style="text-align:center; margin-top:1rem;">
+        <button onclick="checkFill()" class="accent-bg" style="color:#1e3a8a; font-weight:bold; padding:0.75rem 1.5rem; border-radius:0.75rem; border:none; cursor:pointer;">
+          Verificar
+        </button>
+      </div>
+    `;
+  }
+
+  if (answers[currentQuestion] !== null) {
+    restoreAnswer();
+  }
+}
+
+function selectOption(index) {
+  if (answered) return;
+  answered = true;
+  const q = questions[currentQuestion];
+  const buttons = document.querySelectorAll('#options-container .option-btn');
+  buttons.forEach((btn, i) => {
+    btn.disabled = true;
+    if (i === q.correct) btn.classList.add('correct');
+    if (i === index && i !== q.correct) btn.classList.add('wrong');
+  });
+  const isCorrect = index === q.correct;
+  if (isCorrect) score++;
+  answers[currentQuestion] = { selected: index, correct: isCorrect };
+  showFeedback(isCorrect, q.explanation);
+  document.getElementById('next-btn').classList.remove('hidden');
+  document.getElementById('score-display').textContent = `Pontos: ${score}`;
+}
+
+function selectTF(value) {
+  if (answered) return;
+  answered = true;
+  const q = questions[currentQuestion];
+  const buttons = document.querySelectorAll('#tf-container .option-btn');
+  buttons.forEach((btn, i) => {
+    btn.disabled = true;
+    const btnValue = i === 0; // 0 = verdadeiro, 1 = falso
+    if (btnValue === q.correct) btn.classList.add('correct');
+    if (btnValue === value && btnValue !== q.correct) btn.classList.add('wrong');
+  });
+  const isCorrect = value === q.correct;
+  if (isCorrect) score++;
+  answers[currentQuestion] = { selected: value, correct: isCorrect };
+  showFeedback(isCorrect, q.explanation);
+  document.getElementById('next-btn').classList.remove('hidden');
+  document.getElementById('score-display').textContent = `Pontos: ${score}`;
+}
+
+function checkFill() {
+  if (answered) return;
+  const input = document.getElementById('fill-input');
+  const value = input.value.trim().toLowerCase();
+  if (!value) return;
+  answered = true;
+  const q = questions[currentQuestion];
+  const isCorrect = q.acceptable.map(a => a.toLowerCase()).includes(value);
+  input.disabled = true;
+  input.classList.add(isCorrect ? 'correct-input' : 'wrong-input');
+  if (isCorrect) score++;
+  answers[currentQuestion] = { selected: value, correct: isCorrect };
+  showFeedback(isCorrect, q.explanation);
+  document.getElementById('next-btn').classList.remove('hidden');
+  document.getElementById('score-display').textContent = `Pontos: ${score}`;
+}
+
+function showFeedback(isCorrect, explanation) {
+  const feedback = document.getElementById('feedback-area');
+  feedback.classList.remove('hidden');
+  feedback.innerHTML = `
+    <div style="display:flex; align-items:flex-start; gap:0.75rem;">
+      <span style="font-size:1.5rem;">${isCorrect ? '✅' : '❌'}</span>
+      <div>
+        <p style="font-weight:bold; ${isCorrect ? 'color:#4ade80;' : 'color:#f87171;'} margin-bottom:0.25rem;">
+          ${isCorrect ? 'Correto!' : 'Incorreto.'}
+        </p>
+        <p style="color:#bfdbfe; font-size:0.875rem;">${explanation}</p>
+      </div>
+    </div>
+  `;
+}
+
+function restoreAnswer() {
+  answered = true;
+  document.getElementById('next-btn').classList.remove('hidden');
+}
+
+function nextQuestion() {
+  if (currentQuestion < questions.length - 1) {
+    currentQuestion++;
+    renderQuestion();
+  } else {
+    showResults();
+  }
+}
+
+function prevQuestion() {
+  if (currentQuestion > 0) {
+    currentQuestion--;
+    renderQuestion();
+  }
+}
+
+function showResults() {
+  document.getElementById('question-screen').classList.add('hidden');
+  document.getElementById('result-screen').classList.remove('hidden');
+
+  const percent = Math.round((score / questions.length) * 100);
+  document.getElementById('final-score').textContent = `${score}/${questions.length}`;
+  document.getElementById('final-percent').textContent = `${percent}%`;
+
+  let msg = '';
+  if (percent === 100) msg = '🏆 Perfeito! Você dominou as perguntas do Dia 2!';
+  else if (percent >= 70) msg = '🎉 Muito bom! Você está no caminho certo.';
+  else if (percent >= 50) msg = '👍 Bom esforço! Revise os slides e tente de novo.';
+  else msg = '💪 Que tal revisar o módulo e tentar novamente? Você consegue!';
+  document.getElementById('final-message').textContent = msg;
+
+  const review = document.getElementById('review-container');
+  review.innerHTML = questions.map((q, i) => {
+    const ans = answers[i];
+    const icon = ans?.correct ? '✅' : '❌';
+    let userAnswer = '';
+    if (q.type === 'multiple') userAnswer = q.options[ans?.selected] || '—';
+    else if (q.type === 'truefalse') userAnswer = ans?.selected ? 'Verdadeiro' : 'Falso';
+    else userAnswer = ans?.selected || '—';
+
+    let correctAnswer = '';
+    if (q.type === 'multiple') correctAnswer = q.options[q.correct];
+    else if (q.type === 'truefalse') correctAnswer = q.correct ? 'Verdadeiro' : 'Falso';
+    else correctAnswer = q.answer;
+
+    return `
+      <div style="border-bottom:1px solid #1e3a8a; padding-bottom:0.75rem; ${i === questions.length - 1 ? 'border-bottom:none;' : ''}">
+        <p style="font-size:0.875rem; color:#93c5fd; margin-bottom:0.25rem;">${icon} Pergunta ${i + 1}</p>
+        <p style="font-weight:bold; margin-bottom:0.25rem;">${q.question}</p>
+        <p style="font-size:0.875rem;"><span style="color:#60a5fa;">Sua resposta:</span> ${userAnswer}</p>
+        ${!ans?.correct ? `<p style="font-size:0.875rem;"><span style="color:#4ade80;">Correta:</span> ${correctAnswer}</p>` : ''}
+        <p style="font-size:0.75rem; color:#93c5fd; margin-top:0.25rem; font-style:italic;">${q.explanation}</p>
+      </div>
+    `;
+  }).join('');
+}
+
+function restartQuiz() {
+  document.getElementById('result-screen').classList.add('hidden');
+  document.getElementById('start-screen').classList.remove('hidden');
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && document.getElementById('fill-input') && !answered) {
+    checkFill();
+  }
+});
+</script>
+</body>
+</html>
