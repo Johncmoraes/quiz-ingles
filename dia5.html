@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quiz — Dia 5: Dar Opinião</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  body { font-family: 'Segoe UI', system-ui, sans-serif; }
+  .slide-bg { background: linear-gradient(135deg, #0a1a4a 0%, #0d2366 50%, #0a1a4a 100%); }
+  .accent { color: #fbbf24; }
+  .accent-bg { background-color: #fbbf24; }
+  .card { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); }
+  .option-btn { transition: all 0.2s; }
+  .option-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(251,191,36,0.3); }
+  .option-btn.correct { background: #16a34a !important; border-color: #16a34a !important; color: white !important; }
+  .option-btn.wrong { background: #dc2626 !important; border-color: #dc2626 !important; color: white !important; }
+  .option-btn.selected { border-color: #fbbf24 !important; }
+  .fade-in { animation: fadeIn 0.3s ease-in; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  .progress-bar { transition: width 0.4s ease; }
+  .fill-input { background: transparent; border: none; border-bottom: 2px solid #fbbf24; color: #fbbf24; font-weight: bold; text-align: center; outline: none; }
+  .fill-input:focus { border-bottom-color: white; }
+  .fill-input.correct-input { border-bottom-color: #16a34a; color: #16a34a; }
+  .fill-input.wrong-input { border-bottom-color: #dc2626; color: #dc2626; }
+</style>
+</head>
+<body class="slide-bg min-h-screen text-white">
+
+<div id="app" class="max-w-3xl mx-auto px-4 py-8">
+  <!-- Tela inicial -->
+  <div id="start-screen" class="text-center fade-in">
+    <div class="inline-block px-4 py-2 rounded-full border border-blue-400 text-sm mb-6">
+      <span class="accent font-bold">DIA 5</span> — DAR OPINIÃO
+    </div>
+    <h1 class="text-4xl md:text-5xl font-bold mb-4">Quiz do Módulo 5</h1>
+    <p class="text-xl text-blue-200 mb-8">Teste o que você aprendeu sobre dar opinião em inglês.</p>
+
+    <div class="card rounded-2xl p-6 mb-8 text-left">
+      <h2 class="accent font-bold text-lg mb-3">Como funciona:</h2>
+      <ul class="space-y-2 text-blue-100">
+        <li>📝 <strong>10 perguntas</strong> de tipos variados</li>
+        <li>✅ <strong>Feedback imediato</strong> após cada resposta</li>
+        <li>🏆 <strong>Pontuação final</strong> com revisão das respostas</li>
+        <li>⏱️ Sem limite de tempo — vá no seu ritmo</li>
+      </ul>
+    </div>
+
+    <button onclick="startQuiz()" class="accent-bg text-blue-900 font-bold text-lg px-8 py-4 rounded-xl hover:bg-yellow-300 transition">
+      Começar Quiz →
+    </button>
+  </div>
+
+  <!-- Tela de pergunta -->
+  <div id="question-screen" class="hidden fade-in">
+    <div class="flex justify-between items-center mb-4">
+      <span class="text-blue-300 text-sm" id="question-counter">Pergunta 1 de 10</span>
+      <span class="text-blue-300 text-sm" id="score-display">Pontos: 0</span>
+    </div>
+    <div class="w-full bg-blue-900 rounded-full h-2 mb-8">
+      <div id="progress-bar" class="accent-bg h-2 rounded-full progress-bar" style="width: 10%"></div>
+    </div>
+
+    <div id="question-container" class="card rounded-2xl p-6 md:p-8">
+      <!-- Conteúdo injetado via JS -->
+    </div>
+
+    <div id="feedback-area" class="hidden mt-6 card rounded-xl p-5">
+      <!-- Feedback injetado via JS -->
+    </div>
+
+    <div class="flex justify-between mt-6">
+      <button id="prev-btn" onclick="prevQuestion()" class="hidden text-blue-300 hover:text-white transition px-4 py-2">
+        ← Anterior
+      </button>
+      <button id="next-btn" onclick="nextQuestion()" class="hidden accent-bg text-blue-900 font-bold px-6 py-3 rounded-xl hover:bg-yellow-300 transition ml-auto">
+        Próxima →
+      </button>
+    </div>
+  </div>
+
+  <!-- Tela de resultado -->
+  <div id="result-screen" class="hidden fade-in text-center">
+    <div class="inline-block px-4 py-2 rounded-full border border-blue-400 text-sm mb-6">
+      <span class="accent font-bold">DIA 5</span> — DAR OPINIÃO
+    </div>
+    <h1 class="text-4xl font-bold mb-2">Quiz Concluído!</h1>
+    <p class="text-blue-200 mb-6">Veja como você se saiu:</p>
+
+    <div class="card rounded-2xl p-8 mb-6 inline-block">
+      <div class="text-6xl font-bold accent mb-2" id="final-score">0/10</div>
+      <div class="text-blue-300" id="final-percent">0%</div>
+    </div>
+
+    <p class="text-xl mb-8" id="final-message"></p>
+
+    <div class="card rounded-2xl p-6 mb-8 text-left">
+      <h2 class="accent font-bold text-lg mb-4">Revisão das respostas:</h2>
+      <div id="review-container" class="space-y-4">
+        <!-- Injetado via JS -->
+      </div>
+    </div>
+
+    <button onclick="restartQuiz()" class="accent-bg text-blue-900 font-bold px-8 py-4 rounded-xl hover:bg-yellow-300 transition">
+      Refazer Quiz ↻
+    </button>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// BANCO DE PERGUNTAS — Dia 5: Dar Opinião
+// ============================================================
+const questions = [
+  {
+    type: "multiple",
+    question: "Qual é a tradução correta de 'I think it's a good idea.'?",
+    options: [
+      "Eu acho que é uma boa ideia.",
+      "Eu acho que é uma grande ideia.",
+      "Eu acho que é uma má ideia.",
+      "Eu sinto que é uma boa ideia."
+    ],
+    correct: 0,
+    explanation: "Correto! 'I think it's a good idea' = 'Acho que é uma boa ideia.' — a estrutura principal do módulo."
+  },
+  {
+    type: "multiple",
+    question: "Qual das opções NÃO é uma variação válida de 'I think it's a good idea'?",
+    options: [
+      "I think it's a great idea",
+      "I think it's a bad idea",
+      "I think it's the good idea",
+      "Todas as anteriores são variações válidas"
+    ],
+    correct: 2,
+    explanation: "As variações ensinadas são 'great idea' e 'bad idea'. 'The good idea' com artigo não é uma variação do padrão."
+  },
+  {
+    type: "truefalse",
+    question: "'I think it's a good idea' deve ser usado quando você quer dar uma opinião simples sobre algo.",
+    correct: true,
+    explanation: "Correto! Essa expressão é usada para dar uma opinião simples e direta sobre algo."
+  },
+  {
+    type: "fill",
+    question: "Complete a expressão para expressar dúvida de forma educada:",
+    prefix: "I'm not really",
+    answer: "sure",
+    acceptable: ["sure"],
+    explanation: "'I'm not really sure' = 'Não tenho certeza' — usada para expressar dúvida de forma educada."
+  },
+  {
+    type: "multiple",
+    question: "Quando você deve usar 'I'm not sure if that's right'?",
+    options: [
+      "Quando quer concordar com alguém",
+      "Quando quer expressar dúvida de forma educada",
+      "Quando quer dar uma opinião forte",
+      "Quando quer mudar de assunto"
+    ],
+    correct: 1,
+    explanation: "Correto! 'I'm not sure if that's right' é usada para expressar dúvida de forma educada."
+  },
+  {
+    type: "fill",
+    question: "Complete a expressão que significa 'Depende':",
+    prefix: "It",
+    answer: "depends",
+    acceptable: ["depends"],
+    explanation: "'It depends' = 'Depende' — usada quando a resposta pode variar."
+  },
+  {
+    type: "multiple",
+    question: "Qual das opções é uma variação de 'It depends' ensinada no módulo?",
+    options: [
+      "It depends on the weather",
+      "It depends on the situation",
+      "It depends of the person",
+      "It depend on the situation"
+    ],
+    correct: 1,
+    explanation: "As variações ensinadas são 'It depends on the situation' e 'It depends on the person'. Atenção: 'depends ON', não 'OF'."
+  },
+  {
+    type: "truefalse",
+    question: "'I feel the same way' significa 'Eu sinto o mesmo' e é usada para mostrar que você concorda com alguém.",
+    correct: true,
+    explanation: "Correto! 'I feel the same way' = 'Eu sinto o mesmo' — usada para concordar com alguém."
+  },
+  {
+    type: "multiple",
+    question: "Qual expressão você usaria para reconhecer algo que a outra pessoa falou?",
+    options: [
+      "I think it's a good idea",
+      "It depends",
+      "That's a great point",
+      "I'm not really sure"
+    ],
+    correct: 2,
+    explanation: "Correto! 'That's a great point' (ou 'That's a good point' / 'That's interesting') é usada para reconhecer o que a outra pessoa falou."
+  },
+  {
+    type: "fill",
+    question: "Complete a variação de 'I feel the same way' que também significa concordar:",
+    prefix: "I agree",
+    suffix: "you.",
+    answer: "with",
+    acceptable: ["with"],
+    explanation: "'I agree with you' = 'Eu concordo com você' — outra forma de mostrar que você concorda com alguém."
+  }
+];
+
+// ============================================================
+// MOTOR DO QUIZ
+// ============================================================
+let currentQuestion = 0;
+let score = 0;
+let answers = [];
+let answered = false;
+
+function startQuiz() {
+  document.getElementById('start-screen').classList.add('hidden');
+  document.getElementById('question-screen').classList.remove('hidden');
+  currentQuestion = 0;
+  score = 0;
+  answers = new Array(questions.length).fill(null);
+  renderQuestion();
+}
+
+function renderQuestion() {
+  answered = false;
+  const q = questions[currentQuestion];
+  const container = document.getElementById('question-container');
+  const feedback = document.getElementById('feedback-area');
+  feedback.classList.add('hidden');
+
+  document.getElementById('question-counter').textContent = `Pergunta ${currentQuestion + 1} de ${questions.length}`;
+  document.getElementById('score-display').textContent = `Pontos: ${score}`;
+  document.getElementById('progress-bar').style.width = `${((currentQuestion + 1) / questions.length) * 100}%`;
+
+  document.getElementById('prev-btn').classList.toggle('hidden', currentQuestion === 0);
+  document.getElementById('next-btn').classList.add('hidden');
+
+  if (q.type === 'multiple') {
+    container.innerHTML = `
+      <div class="mb-2"><span class="accent text-sm font-bold uppercase tracking-wide">Múltipla escolha</span></div>
+      <h3 class="text-xl md:text-2xl font-bold mb-6">${q.question}</h3>
+      <div class="space-y-3" id="options-container">
+        ${q.options.map((opt, i) => `
+          <button class="option-btn w-full text-left p-4 rounded-xl border border-blue-700 bg-blue-900/50 hover:border-yellow-400"
+                  onclick="selectOption(${i})" data-index="${i}">
+            <span class="accent font-bold mr-3">${String.fromCharCode(65 + i)}.</span> ${opt}
+          </button>
+        `).join('')}
+      </div>
+    `;
+  } else if (q.type === 'truefalse') {
+    container.innerHTML = `
+      <div class="mb-2"><span class="accent text-sm font-bold uppercase tracking-wide">Verdadeiro ou Falso</span></div>
+      <h3 class="text-xl md:text-2xl font-bold mb-6">${q.question}</h3>
+      <div class="flex gap-4 justify-center" id="tf-container">
+        <button class="option-btn flex-1 p-6 rounded-xl border border-blue-700 bg-blue-900/50 hover:border-green-400 text-lg font-bold"
+                onclick="selectTF(true)">✓ Verdadeiro</button>
+        <button class="option-btn flex-1 p-6 rounded-xl border border-blue-700 bg-blue-900/50 hover:border-red-400 text-lg font-bold"
+                onclick="selectTF(false)">✗ Falso</button>
+      </div>
+    `;
+  } else if (q.type === 'fill') {
+    container.innerHTML = `
+      <div class="mb-2"><span class="accent text-sm font-bold uppercase tracking-wide">Complete a frase</span></div>
+      <h3 class="text-xl md:text-2xl font-bold mb-6">${q.question}</h3>
+      <div class="text-2xl md:text-3xl text-center py-6">
+        <span>${q.prefix || ''}</span>
+        <input type="text" id="fill-input" class="fill-input mx-2 w-40 text-2xl md:text-3xl" placeholder="___" autocomplete="off">
+        <span>${q.suffix || ''}</span>
+      </div>
+      <div class="text-center mt-4">
+        <button onclick="checkFill()" class="accent-bg text-blue-900 font-bold px-6 py-3 rounded-xl hover:bg-yellow-300 transition">
+          Verificar
+        </button>
+      </div>
+    `;
+  }
+
+  if (answers[currentQuestion] !== null) {
+    restoreAnswer();
+  }
+}
+
+function selectOption(index) {
+  if (answered) return;
+  answered = true;
+  const q = questions[currentQuestion];
+  const buttons = document.querySelectorAll('#options-container .option-btn');
+  buttons.forEach((btn, i) => {
+    btn.disabled = true;
+    if (i === q.correct) btn.classList.add('correct');
+    if (i === index && i !== q.correct) btn.classList.add('wrong');
+  });
+  const isCorrect = index === q.correct;
+  if (isCorrect) score++;
+  answers[currentQuestion] = { selected: index, correct: isCorrect };
+  showFeedback(isCorrect, q.explanation);
+  document.getElementById('next-btn').classList.remove('hidden');
+  document.getElementById('score-display').textContent = `Pontos: ${score}`;
+}
+
+function selectTF(value) {
+  if (answered) return;
+  answered = true;
+  const q = questions[currentQuestion];
+  const buttons = document.querySelectorAll('#tf-container .option-btn');
+  buttons.forEach((btn, i) => {
+    btn.disabled = true;
+    const btnValue = i === 0;
+    if (btnValue === q.correct) btn.classList.add('correct');
+    if (btnValue === value && btnValue !== q.correct) btn.classList.add('wrong');
+  });
+  const isCorrect = value === q.correct;
+  if (isCorrect) score++;
+  answers[currentQuestion] = { selected: value, correct: isCorrect };
+  showFeedback(isCorrect, q.explanation);
+  document.getElementById('next-btn').classList.remove('hidden');
+  document.getElementById('score-display').textContent = `Pontos: ${score}`;
+}
+
+function checkFill() {
+  if (answered) return;
+  const input = document.getElementById('fill-input');
+  const value = input.value.trim().toLowerCase();
+  if (!value) return;
+  answered = true;
+  const q = questions[currentQuestion];
+  const isCorrect = q.acceptable.map(a => a.toLowerCase()).includes(value);
+  input.disabled = true;
+  input.classList.add(isCorrect ? 'correct-input' : 'wrong-input');
+  if (isCorrect) score++;
+  answers[currentQuestion] = { selected: value, correct: isCorrect };
+  showFeedback(isCorrect, q.explanation);
+  document.getElementById('next-btn').classList.remove('hidden');
+  document.getElementById('score-display').textContent = `Pontos: ${score}`;
+}
+
+function showFeedback(isCorrect, explanation) {
+  const feedback = document.getElementById('feedback-area');
+  feedback.classList.remove('hidden');
+  feedback.innerHTML = `
+    <div class="flex items-start gap-3">
+      <span class="text-2xl">${isCorrect ? '✅' : '❌'}</span>
+      <div>
+        <p class="font-bold ${isCorrect ? 'text-green-400' : 'text-red-400'} mb-1">
+          ${isCorrect ? 'Correto!' : 'Incorreto.'}
+        </p>
+        <p class="text-blue-200 text-sm">${explanation}</p>
+      </div>
+    </div>
+  `;
+}
+
+function restoreAnswer() {
+  answered = true;
+  document.getElementById('next-btn').classList.remove('hidden');
+}
+
+function nextQuestion() {
+  if (currentQuestion < questions.length - 1) {
+    currentQuestion++;
+    renderQuestion();
+  } else {
+    showResults();
+  }
+}
+
+function prevQuestion() {
+  if (currentQuestion > 0) {
+    currentQuestion--;
+    renderQuestion();
+  }
+}
+
+function showResults() {
+  document.getElementById('question-screen').classList.add('hidden');
+  document.getElementById('result-screen').classList.remove('hidden');
+
+  const percent = Math.round((score / questions.length) * 100);
+  document.getElementById('final-score').textContent = `${score}/${questions.length}`;
+  document.getElementById('final-percent').textContent = `${percent}%`;
+
+  let msg = '';
+  if (percent === 100) msg = '🏆 Perfeito! Você dominou as expressões de opinião do Dia 5!';
+  else if (percent >= 70) msg = '👏 Muito bom! Você está no caminho certo.';
+  else if (percent >= 50) msg = '👍 Bom esforço! Revise os slides e tente de novo.';
+  else msg = '📚 Que tal revisar o módulo e tentar novamente? Você consegue!';
+  document.getElementById('final-message').textContent = msg;
+
+  const review = document.getElementById('review-container');
+  review.innerHTML = questions.map((q, i) => {
+    const ans = answers[i];
+    const icon = ans?.correct ? '✅' : '❌';
+    let userAnswer = '';
+    if (q.type === 'multiple') userAnswer = q.options[ans?.selected] || '—';
+    else if (q.type === 'truefalse') userAnswer = ans?.selected ? 'Verdadeiro' : 'Falso';
+    else userAnswer = ans?.selected || '—';
+
+    let correctAnswer = '';
+    if (q.type === 'multiple') correctAnswer = q.options[q.correct];
+    else if (q.type === 'truefalse') correctAnswer = q.correct ? 'Verdadeiro' : 'Falso';
+    else correctAnswer = q.answer;
+
+    return `
+      <div class="border-b border-blue-800 pb-3 last:border-0">
+        <p class="text-sm text-blue-300 mb-1">${icon} Pergunta ${i + 1}</p>
+        <p class="font-bold mb-1">${q.question}</p>
+        <p class="text-sm"><span class="text-blue-400">Sua resposta:</span> ${userAnswer}</p>
+        ${!ans?.correct ? `<p class="text-sm"><span class="text-green-400">Correta:</span> ${correctAnswer}</p>` : ''}
+        <p class="text-xs text-blue-300 mt-1 italic">${q.explanation}</p>
+      </div>
+    `;
+  }).join('');
+}
+
+function restartQuiz() {
+  document.getElementById('result-screen').classList.add('hidden');
+  document.getElementById('start-screen').classList.remove('hidden');
+}
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && document.getElementById('fill-input') && !answered) {
+    checkFill();
+  }
+});
+</script>
+</body>
+</html>
