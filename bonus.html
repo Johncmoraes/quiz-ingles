@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quiz Bônus — Revisão Geral do Curso</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+  body { font-family: 'Segoe UI', system-ui, sans-serif; }
+  .slide-bg { background: linear-gradient(135deg, #0a1a4a 0%, #0d2366 50%, #0a1a4a 100%); }
+  .accent { color: #fbbf24; }
+  .accent-bg { background-color: #fbbf24; }
+  .card { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); }
+  .option-btn { transition: all 0.2s; }
+  .option-btn:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(251,191,36,0.3); }
+  .option-btn.correct { background: #16a34a !important; border-color: #16a34a !important; color: white !important; }
+  .option-btn.wrong { background: #dc2626 !important; border-color: #dc2626 !important; color: white !important; }
+  .fade-in { animation: fadeIn 0.3s ease-in; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+  .progress-bar { transition: width 0.4s ease; }
+  .fill-input { background: transparent; border: none; border-bottom: 2px solid #fbbf24; color: #fbbf24; font-weight: bold; text-align: center; outline: none; }
+  .fill-input:focus { border-bottom-color: white; }
+  .fill-input.correct-input { border-bottom-color: #16a34a; color: #16a34a; }
+  .fill-input.wrong-input { border-bottom-color: #dc2626; color: #dc2626; }
+  .instructor-section { border-top: 3px dashed #fbbf24; }
+  .tab-btn.active { background: #fbbf24; color: #0a1a4a; }
+</style>
+</head>
+<body class="slide-bg min-h-screen text-white">
+
+<div id="app" class="max-w-3xl mx-auto px-4 py-8">
+
+
+  <!-- ============ SEÇÃO DO ALUNO ============ -->
+  <div id="student-view">
+    <!-- Tela inicial -->
+    <div id="start-screen" class="text-center fade-in">
+      <div class="inline-block px-4 py-2 rounded-full border border-blue-400 text-sm mb-6">
+        <span class="accent font-bold">QUIZ BÔNUS</span> — REVISÃO GERAL
+      </div>
+      <h1 class="text-4xl md:text-5xl font-bold mb-4">Desafio Final do Curso</h1>
+      <p class="text-xl text-blue-200 mb-8">Teste tudo o que você aprendeu ao longo dos 7 dias!</p>
+
+      <div class="card rounded-2xl p-6 mb-8 text-left">
+        <h2 class="accent font-bold text-lg mb-3"> Instruções:</h2>
+        <ul class="space-y-2 text-blue-100">
+          <li> <strong>20 perguntas</strong> misturando todos os módulos do curso</li>
+          <li>🔀 As perguntas aparecem em <strong>ordem aleatória</strong> a cada tentativa</li>
+          <li>📝 Formatos variados: múltipla escolha, verdadeiro/falso e completar frase</li>
+          <li>✅ <strong>Feedback imediato</strong> após cada resposta</li>
+          <li>🏆 <strong>Pontuação final</strong> com revisão completa</li>
+          <li>⏱️ Sem limite de tempo — vá no seu ritmo</li>
+        </ul>
+      </div>
+
+      <div class="card rounded-2xl p-6 mb-8 text-left">
+        <h2 class="accent font-bold text-lg mb-3">💡 Dica importante:</h2>
+        <p class="text-blue-100">As perguntas <strong>não indicam</strong> a qual dia ou módulo pertencem. O desafio é recuperar o que você aprendeu em todo o curso — exatamente como vai acontecer numa conversa real!</p>
+      </div>
+
+      <button onclick="startQuiz()" class="accent-bg text-blue-900 font-bold text-lg px-8 py-4 rounded-xl hover:bg-yellow-300 transition">
+        Começar Desafio →
+      </button>
+    </div>
+
+    <!-- Tela de pergunta -->
+    <div id="question-screen" class="hidden fade-in">
+      <div class="flex justify-between items-center mb-4">
+        <span class="text-blue-300 text-sm" id="question-counter">Pergunta 1 de 20</span>
+        <span class="text-blue-300 text-sm" id="score-display">Pontos: 0</span>
+      </div>
+      <div class="w-full bg-blue-900 rounded-full h-2 mb-8">
+        <div id="progress-bar" class="accent-bg h-2 rounded-full progress-bar" style="width: 5%"></div>
+      </div>
+
+      <div id="question-container" class="card rounded-2xl p-6 md:p-8">
+        <!-- Conteúdo injetado via JS -->
+      </div>
+
+      <div id="feedback-area" class="hidden mt-6 card rounded-xl p-5">
+        <!-- Feedback injetado via JS -->
+      </div>
+
+      <div class="flex justify-between mt-6">
+        <button id="prev-btn" onclick="prevQuestion()" class="hidden text-blue-300 hover:text-white transition px-4 py-2">
+          ← Anterior
+        </button>
+        <button id="next-btn" onclick="nextQuestion()" class="hidden accent-bg text-blue-900 font-bold px-6 py-3 rounded-xl hover:bg-yellow-300 transition ml-auto">
+          Próxima →
+        </button>
+      </div>
+    </div>
+
+    <!-- Tela de resultado -->
+    <div id="result-screen" class="hidden fade-in text-center">
+      <div class="inline-block px-4 py-2 rounded-full border border-blue-400 text-sm mb-6">
+        <span class="accent font-bold">QUIZ BÔNUS</span> — REVISÃO GERAL
+      </div>
+      <h1 class="text-4xl font-bold mb-2">Desafio Concluído!</h1>
+      <p class="text-blue-200 mb-6">Veja como você se saiu:</p>
+
+      <div class="card rounded-2xl p-8 mb-6 inline-block">
+        <div class="text-6xl font-bold accent mb-2" id="final-score">0/20</div>
+        <div class="text-blue-300" id="final-percent">0%</div>
+      </div>
+
+      <p class="text-xl mb-8" id="final-message"></p>
+
+      <div class="card rounded-2xl p-6 mb-8 text-left">
+        <h2 class="accent font-bold text-lg mb-4">📖 Revisão das respostas:</h2>
+        <div id="review-container" class="space-y-4">
+          <!-- Injetado via JS -->
+        </div>
+      </div>
+
+      <button onclick="restartQuiz()" class="accent-bg text-blue-900 font-bold px-8 py-4 rounded-xl hover:bg-yellow-300 transition">
+        Refazer Quiz ↻
+      </button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ============================================================
+// BANCO DE PERGUNTAS — Quiz Bônus (todos os módulos)
+// ============================================================
+const allQuestions = [
+  // ===== DIA 1 — Respostas Automáticas (3) =====
+  {
+    type: "multiple",
+    question: "Qual é a resposta mais natural para 'How are you?' quando você está bem, mas quer soar mais autêntico do que apenas 'I'm good'?",
+    options: ["I'm very good, actually thanks", "Pretty good, actually", "I'm good good", "I am being good"],
+    correct: 1,
+    explanation: "'Pretty good, actually' soa mais natural e autêntico. As outras opções misturam estruturas ou soam artificiais.",
+    module: "Dia 1 — Respostas Automáticas"
+  },
+  {
+    type: "fill",
+    question: "Complete a resposta para 'What's up?' ou 'What are you doing?':",
+    prefix: "Not much, just",
+    answer: "working",
+    acceptable: ["working", "relaxing", "taking it easy"],
+    explanation: "'Not much, just working/relaxing/taking it easy' = 'Nada demais, só trabalhando/relaxando/aproveitando.'",
+    module: "Dia 1 — Respostas Automáticas"
+  },
+  {
+    type: "truefalse",
+    question: "'I'm a bit tired today' é uma resposta automática pronta que você pode usar quando alguém perguntar como você está.",
+    correct: true,
+    explanation: "Correto! É uma resposta automática para usar quando estiver cansado — sem precisar montar a frase na hora.",
+    module: "Dia 1 — Respostas Automáticas"
+  },
+
+  // ===== DIA 2 — Fazer Perguntas (2) =====
+  {
+    type: "multiple",
+    question: "Qual dessas perguntas é mais natural para puxar assunto com alguém?",
+    options: ["What is your job profession exactly?", "What do you do?", "Which is your work?", "Tell me your job"],
+    correct: 1,
+    explanation: "'What do you do?' é a forma mais natural e comum em inglês para perguntar sobre a profissão de alguém.",
+    module: "Dia 2 — Fazer Perguntas"
+  },
+  {
+    type: "truefalse",
+    question: "Em inglês, é mais natural dizer 'Where you live?' do que 'Where do you live?'",
+    correct: false,
+    explanation: "Incorreto! A forma correta é 'Where do you live?' — o auxiliar 'do' é necessário em perguntas com 'where'.",
+    module: "Dia 2 — Fazer Perguntas"
+  },
+
+  // ===== DIA 3 — Manter a Conversa (2) =====
+  {
+    type: "multiple",
+    question: "Qual expressão é ideal para mostrar interesse e manter a conversa fluindo?",
+    options: ["OK.", "That's interesting! Tell me more.", "I see, bye.", "Hmm."],
+    correct: 1,
+    explanation: "'That's interesting! Tell me more.' demonstra interesse genuíno e incentiva a outra pessoa a continuar falando.",
+    module: "Dia 3 — Manter a Conversa"
+  },
+  {
+    type: "fill",
+    question: "Complete a expressão para concordar e manter o papo:",
+    prefix: "That makes",
+    suffix: ".",
+    answer: "sense",
+    acceptable: ["sense"],
+    explanation: "'That makes sense.' = 'Faz sentido.' — ótima expressão para mostrar que você está acompanhando a conversa.",
+    module: "Dia 3 — Manter a Conversa"
+  },
+
+  // ===== DIA 4 — Falar Sobre Você (4) =====
+  {
+    type: "multiple",
+    question: "Qual variação da frase 'I usually wake up early' indica que você acorda tarde?",
+    options: ["I usually wake up at 7", "I usually wake up late", "I usually wake up early", "I usually wake up fast"],
+    correct: 1,
+    explanation: "'I usually wake up late' = 'Eu geralmente acordo tarde.' É a variação oposta de 'early'.",
+    module: "Dia 4 — Falar Sobre Você"
+  },
+  {
+    type: "fill",
+    question: "Complete a frase sobre sua rotina de trabalho:",
+    prefix: "I work",
+    suffix: "the day.",
+    answer: "during",
+    acceptable: ["during"],
+    explanation: "'I work during the day.' = 'Eu trabalho durante o dia.'",
+    module: "Dia 4 — Falar Sobre Você"
+  },
+  {
+    type: "multiple",
+    question: "Qual frase você usaria para dizer que passa tempo com seus amigos?",
+    options: ["I spend time with my family", "I spend time with my friends", "I spend time alone", "I spend time working"],
+    correct: 1,
+    explanation: "'I spend time with my friends' = 'Eu passo tempo com meus amigos.' A estrutura 'spend time with...' serve para pessoas.",
+    module: "Dia 4 — Falar Sobre Você"
+  },
+  {
+    type: "truefalse",
+    question: "'I try to stay productive' pode ter a variação 'I try to stay healthy' para falar sobre hábitos pessoais.",
+    correct: true,
+    explanation: "Correto! A estrutura 'I try to stay ___' aceita várias palavras: productive, healthy, focused, etc.",
+    module: "Dia 4 — Falar Sobre Você"
+  },
+
+  // ===== DIA 5 — Dar Opinião (3) =====
+  {
+    type: "multiple",
+    question: "Como você diria 'Acho que não' de forma natural em inglês?",
+    options: ["I no think", "I don't think so", "I think no", "Not I think"],
+    correct: 1,
+    explanation: "'I don't think so' = 'Acho que não.' É a forma natural e correta de discordar suavemente.",
+    module: "Dia 5 — Dar Opinião"
+  },
+  {
+    type: "fill",
+    question: "Complete a expressão para quando a resposta pode variar:",
+    prefix: "It",
+    suffix: ".",
+    answer: "depends",
+    acceptable: ["depends"],
+    explanation: "'It depends.' = 'Depende.' Você pode complementar com 'on the situation' ou 'on the person'.",
+    module: "Dia 5 — Dar Opinião"
+  },
+  {
+    type: "multiple",
+    question: "Qual frase usar para reconhecer que a outra pessoa falou algo relevante?",
+    options: ["That's a great point", "You are right point", "This point is great you", "Good point is that"],
+    correct: 0,
+    explanation: "'That's a great point' = 'Esse é um ótimo ponto.' Reconhece o valor do que a outra pessoa disse.",
+    module: "Dia 5 — Dar Opinião"
+  },
+
+  // ===== DIA 6 — Situações Reais (3) =====
+  {
+    type: "multiple",
+    question: "Você está num restaurante e quer pedir algo. Qual frase é a mais natural?",
+    options: ["I want this food now", "I'd like to order this", "Give me this please", "I order this"],
+    correct: 1,
+    explanation: "'I'd like to order this' = 'Eu gostaria de pedir isso.' É polido e natural para restaurantes.",
+    module: "Dia 6 — Situações Reais"
+  },
+  {
+    type: "fill",
+    question: "Complete a pergunta para saber o horário de funcionamento:",
+    prefix: "What time does it",
+    suffix: "?",
+    answer: "open",
+    acceptable: ["open", "close", "start"],
+    explanation: "'What time does it open/close/start?' = 'Que horas abre/fecha/começa?'",
+    module: "Dia 6 — Situações Reais"
+  },
+  {
+    type: "truefalse",
+    question: "'Where is the bathroom?' e 'Where is the restroom?' têm o mesmo significado e podem ser usadas de forma intercambiável.",
+    correct: true,
+    explanation: "Correto! 'Bathroom' e 'restroom' são sinônimos nos EUA para pedir a localização do banheiro.",
+    module: "Dia 6 — Situações Reais"
+  },
+
+  // ===== DIA 7 — Destravar de Vez (3) =====
+  {
+    type: "multiple",
+    question: "Segundo o Dia 7, o que é fluência de verdade?",
+    options: ["Saber todas as palavras do inglês", "Conseguir se comunicar", "Falar sem sotaque", "Nunca errar gramática"],
+    correct: 1,
+    explanation: "Fluência não é saber tudo — é conseguir se comunicar. Esse é o conceito central do Dia 7.",
+    module: "Dia 7 — Destravar de Vez"
+  },
+  {
+    type: "fill",
+    question: "Complete a frase para ganhar tempo quando precisar pensar:",
+    prefix: "Let me",
+    suffix: "...",
+    answer: "think",
+    acceptable: ["think", "see", "check"],
+    explanation: "'Let me think/see/check...' = 'Deixa eu pensar/ver/conferir...' — evita travar completamente.",
+    module: "Dia 7 — Destravar de Vez"
+  },
+  {
+    type: "multiple",
+    question: "Qual frase mostra confiança e atitude quando você vai tentar algo em inglês?",
+    options: ["I'll try my best", "I try best my", "My best I'll try", "I'll best try my"],
+    correct: 0,
+    explanation: "'I'll try my best' = 'Vou dar o meu melhor.' Variações: 'I'll try' / 'I'll do my best'.",
+    module: "Dia 7 — Destravar de Vez"
+  }
+];
+
+// ============================================================
+// MOTOR DO QUIZ
+// ============================================================
+let questions = [];
+let currentQuestion = 0;
+let score = 0;
+let answers = [];
+let answered = false;
+
+function shuffleArray(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+
+
+function startQuiz() {
+  questions = shuffleArray(allQuestions);
+  document.getElementById('start-screen').classList.add('hidden');
+  document.getElementById('question-screen').classList.remove('hidden');
+  currentQuestion = 0;
+  score = 0;
+  answers = new Array(questions.length).fill(null);
+  renderQuestion();
+}
+
+function renderQuestion() {
+  answered = false;
+  const q = questions[currentQuestion];
+  const container = document.getElementById('question-container');
+  const feedback = document.getElementById('feedback-area');
+  feedback.classList.add('hidden');
+
+  document.getElementById('question-counter').textContent = `Pergunta ${currentQuestion + 1} de ${questions.length}`;
+  document.getElementById('score-display').textContent = `Pontos: ${score}`;
+  document.getElementById('progress-bar').style.width = `${((currentQuestion + 1) / questions.length) * 100}%`;
+
+  document.getElementById('prev-btn').classList.toggle('hidden', currentQuestion === 0);
+  document.getElementById('next-btn').classList.add('hidden');
+
+  if (q.type === 'multiple') {
+    container.innerHTML = `
+      <div class="mb-2"><span class="accent text-sm font-bold uppercase tracking-wide">Múltipla escolha</span></div>
+      <h3 class="text-xl md:text-2xl font-bold mb-6">${q.question}</h3>
+      <div class="space-y-3" id="options-container">
+        ${q.options.map((opt, i) => `
+          <button class="option-btn w-full text-left p-4 rounded-xl border border-blue-700 bg-blue-900/50 hover:border-yellow-400"
+                  onclick="selectOption(${i})" data-index="${i}">
+            <span class="accent font-bold mr-3">${String.fromCharCode(65 + i)}.</span> ${opt}
+          </button>
+        `).join('')}
+      </div>
+    `;
+  } else if (q.type === 'truefalse') {
+    container.innerHTML = `
+      <div class="mb-2"><span class="accent text-sm font-bold uppercase tracking-wide">Verdadeiro ou Falso</span></div>
+      <h3 class="text-xl md:text-2xl font-bold mb-6">${q.question}</h3>
+      <div class="flex gap-4 justify-center" id="tf-container">
+        <button class="option-btn flex-1 p-6 rounded-xl border border-blue-700 bg-blue-900/50 hover:border-green-400 text-lg font-bold"
+                onclick="selectTF(true)">✓ Verdadeiro</button>
+        <button class="option-btn flex-1 p-6 rounded-xl border border-blue-700 bg-blue-900/50 hover:border-red-400 text-lg font-bold"
+                onclick="selectTF(false)">✗ Falso</button>
+      </div>
+    `;
+  } else if (q.type === 'fill') {
+    container.innerHTML = `
+      <div class="mb-2"><span class="accent text-sm font-bold uppercase tracking-wide">Complete a frase</span></div>
+      <h3 class="text-xl md:text-2xl font-bold mb-6">${q.question}</h3>
+      <div class="text-2xl md:text-3xl text-center py-6">
+        <span>${q.prefix || ''}</span>
+        <input type="text" id="fill-input" class="fill-input mx-2 w-40 text-2xl md:text-3xl" placeholder="___" autocomplete="off">
+        <span>${q.suffix || ''}</span>
+      </div>
+      <div class="text-center mt-4">
+        <button onclick="checkFill()" class="accent-bg text-blue-900 font-bold px-6 py-3 rounded-xl hover:bg-yellow-300 transition">
+          Verificar
+        </button>
+      </div>
+    `;
+  }
+
+  if (answers[currentQuestion] !== null) restoreAnswer();
+}
+
+function selectOption(index) {
+  if (answered) return;
+  answered = true;
+  const q = questions[currentQuestion];
+  const buttons = document.querySelectorAll('#options-container .option-btn');
+  buttons.forEach((btn, i) => {
+    btn.disabled = true;
+    if (i === q.correct) btn.classList.add('correct');
+    if (i === index && i !== q.correct) btn.classList.add('wrong');
+  });
+  const isCorrect = index === q.correct;
+  if (isCorrect) score++;
+  answers[currentQuestion] = { selected: index, correct: isCorrect };
+  showFeedback(isCorrect, q.explanation);
+  document.getElementById('next-btn').classList.remove('hidden');
+  document.getElementById('score-display').textContent = `Pontos: ${score}`;
+}
+
+function selectTF(value) {
+  if (answered) return;
+  answered = true;
+  const q = questions[currentQuestion];
+  const buttons = document.querySelectorAll('#tf-container .option-btn');
+  buttons.forEach((btn, i) => {
+    btn.disabled = true;
+    const btnValue = i === 0;
+    if (btnValue === q.correct) btn.classList.add('correct');
+    if (btnValue === value && btnValue !== q.correct) btn.classList.add('wrong');
+  });
+  const isCorrect = value === q.correct;
+  if (isCorrect) score++;
+  answers[currentQuestion] = { selected: value, correct: isCorrect };
+  showFeedback(isCorrect, q.explanation);
+  document.getElementById('next-btn').classList.remove('hidden');
+  document.getElementById('score-display').textContent = `Pontos: ${score}`;
+}
+
+function checkFill() {
+  if (answered) return;
+  const input = document.getElementById('fill-input');
+  const value = input.value.trim().toLowerCase();
+  if (!value) return;
+  answered = true;
+  const q = questions[currentQuestion];
+  const isCorrect = q.acceptable.map(a => a.toLowerCase()).includes(value);
+  input.disabled = true;
+  input.classList.add(isCorrect ? 'correct-input' : 'wrong-input');
+  if (isCorrect) score++;
+  answers[currentQuestion] = { selected: value, correct: isCorrect };
+  showFeedback(isCorrect, q.explanation);
+  document.getElementById('next-btn').classList.remove('hidden');
+  document.getElementById('score-display').textContent = `Pontos: ${score}`;
+}
+
+function showFeedback(isCorrect, explanation) {
+  const feedback = document.getElementById('feedback-area');
+  feedback.classList.remove('hidden');
+  feedback.innerHTML = `
+    <div class="flex items-start gap-3">
+      <span class="text-2xl">${isCorrect ? '✅' : '❌'}</span>
+      <div>
+        <p class="font-bold ${isCorrect ? 'text-green-400' : 'text-red-400'} mb-1">
+          ${isCorrect ? 'Correto!' : 'Incorreto.'}
+        </p>
+        <p class="text-blue-200 text-sm">${explanation}</p>
+      </div>
+    </div>
+  `;
+}
+
+function restoreAnswer() {
+  answered = true;
+  document.getElementById('next-btn').classList.remove('hidden');
+}
+
+function nextQuestion() {
+  if (currentQuestion < questions.length - 1) {
+    currentQuestion++;
+    renderQuestion();
+  } else {
+    showResults();
+  }
+}
+
+function prevQuestion() {
+  if (currentQuestion > 0) {
+    currentQuestion--;
+    renderQuestion();
+  }
+}
+
+function showResults() {
+  document.getElementById('question-screen').classList.add('hidden');
+  document.getElementById('result-screen').classList.remove('hidden');
+
+  const percent = Math.round((score / questions.length) * 100);
+  document.getElementById('final-score').textContent = `${score}/${questions.length}`;
+  document.getElementById('final-percent').textContent = `${percent}%`;
+
+  let msg = '';
+  if (percent === 100) msg = '🏆 Perfeito! Você dominou todo o curso!';
+  else if (percent >= 80) msg = ' Excelente! Você está muito bem preparado!';
+  else if (percent >= 60) msg = '👍 Bom trabalho! Revise os pontos fracos e siga em frente.';
+  else msg = '📚 Que tal revisar os módulos e tentar de novo? Você consegue!';
+  document.getElementById('final-message').textContent = msg;
+
+  const review = document.getElementById('review-container');
+  review.innerHTML = questions.map((q, i) => {
+    const ans = answers[i];
+    const icon = ans?.correct ? '✅' : '❌';
+    let userAnswer = '';
+    if (q.type === 'multiple') userAnswer = q.options[ans?.selected] || '—';
+    else if (q.type === 'truefalse') userAnswer = ans?.selected ? 'Verdadeiro' : 'Falso';
+    else userAnswer = ans?.selected || '—';
+
+    let correctAnswer = '';
+    if (q.type === 'multiple') correctAnswer = q.options[q.correct];
+    else if (q.type === 'truefalse') correctAnswer = q.correct ? 'Verdadeiro' : 'Falso';
+    else correctAnswer = q.answer;
+
+    return `
+      <div class="border-b border-blue-800 pb-3 last:border-0">
+        <p class="text-sm text-blue-300 mb-1">${icon} Pergunta ${i + 1} <span class="text-xs">(${q.module})</span></p>
+        <p class="font-bold mb-1">${q.question}</p>
+        <p class="text-sm"><span class="text-blue-400">Sua resposta:</span> ${userAnswer}</p>
+        ${!ans?.correct ? `<p class="text-sm"><span class="text-green-400">Correta:</span> ${correctAnswer}</p>` : ''}
+        <p class="text-xs text-blue-300 mt-1 italic">${q.explanation}</p>
+      </div>
+    `;
+  }).join('');
+}
+
+function restartQuiz() {
+  document.getElementById('result-screen').classList.add('hidden');
+  document.getElementById('start-screen').classList.remove('hidden');
+}
+
+
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && document.getElementById('fill-input') && !answered) {
+    checkFill();
+  }
+});
+</script>
+</body>
+</html>
